@@ -8,65 +8,6 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
     
     % Protected properties go here
     properties (Access = protected)
-        % Matrices received from Mastan2. Refer to comments in ud_2d1el.m for details.
-        nnodes
-        nele
-        ends
-        truss
-        
-        % Transposes of the corresponding matrices received from Mastan2. Refer to comments in ud_2d1el.m for 
-        % details.
-        coord_t
-        fixity_t
-        concen_t
-        
-        % Total number of degrees of freedom in the structure
-        num_dof_total
-        
-        % Total number of degrees of freedom that are free, have specified displacements, and are supported
-        num_dof_free
-        num_dof_disp
-        num_dof_supp
-        
-        % Vectors of the free, displaced, and support degree of freedom numbers
-        dof_free
-        dof_disp
-        dof_supp
-        
-        % nnodes x 1 vector of node objects representing all the nodes in the structure
-        nodes
-        
-        % nele x 1 vector of element objects representing all the elements in the structure
-        elements
-        
-        % Global stiffness matrix for the structure (sparse)
-        K
-        
-        % Sub-matrices of K (sparse)
-        Kff
-        Kfn
-        Knf
-        Knn
-        Ksf
-        Ksn
-        
-        % Sub-vectors of the force vector
-        Pf
-        Pn
-        Ps
-        
-        % Vector of forces applied directly on the supports
-        Psupp
-        
-        % Sub-vectors of the displacement vector
-        delf
-        deln
-        
-        % Matrices to be returned to Mastan2. Refer to comments in ud_2d1el.m for details.
-        DEFL
-        REACT
-        ELE_FOR
-        AFLAG
 
         % requested maximum number of load steps or increments
         numsteps
@@ -77,6 +18,13 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         % requested maximum applied load ratio
         stop_ratio
 
+        % Force resultant
+        R
+
+        % Error
+        E
+
+
     end
     
     % Public methods go here
@@ -84,8 +32,9 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         %% Constructor
         %    Arguments are all matrices received from Mastan2. Refer to comments in ud_2d1el.m for details.
         function self = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss)
-            self.num_dof_total = nnodes*self.num_dof_node;
             
+%             self.num_dof_total = nnodes*self.num_dof_node;
+            self.num_dof_total = nnodes*3;
             self.nnodes = nnodes;
             self.coord_t = coord';
             self.fixity_t = fixity';
@@ -111,13 +60,22 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             if self.AFLAG
                 self.CreateLoadVectors();
                 self.ComputeDisplacementsReactions();
-                self.RecoverElementForces();
+                self.RecoverElementForces(); % Is covered in SecondOrderAnalysis
             end
         end
     end
     
     % Protected methods go here
     methods (Access = protected)
+        %% Initialize Output Variables
+        %  Initialize the matrices to be returned to Mastan2 with zeros
+        function InitializeOutputVariables(self)
+            self.DEFL = zeros(self.num_dof_node, self.nnodes);
+            self.REACT = zeros(self.num_dof_node, self.nnodes);
+            self.ELE_FOR = zeros(self.nele, self.num_dof_node*2);
+%             self.R = zeros(self.dof_free,self.numsteps);
+        end
+
         %% Main 2nd Order Analysis Calculation
         function SecondOrderAnalysis(self)
             for i = 1:self.numsteps
@@ -129,6 +87,19 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
                 self.coord_t(:,self.dof_free) = self.delf;
                 self.CreateNodes();
                 self.CreateElements();
+
+                % Recover forces and compile R
+                DEFL_t = self.DEFL';
+                for j = 1:self.nele
+                    % Obtain the displacements at the degrees of freedom corresponding to element i using linear
+                    % indexing of the "DEFL_t" matrix
+                    self.elements(j).ComputeForces(DEFL_t(self.elements(j).GetElementDOF()));
+                    self.ELE_FOR(j,:) = self.elements(j).GetFLocalNew();
+                end
+                % write R and E later
+%                 self.R(:,i) = self.ELE_FOR(:,self.dof_free);
+%                 self.E
+
 
 
             end

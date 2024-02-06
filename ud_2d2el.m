@@ -221,11 +221,14 @@ function [DEFL,REACT,ELE_FOR,AFLAG,APRATIOS,LIMIT_STATE] = ud_2d2el(...
 %   You will implement the following three classes that will inherit from their corresponding first order
 %   analysis classes as shown below:
 %
-%       [your initials]_Analysis_2d2el < RC_Analysis_2d1el
-%       [your initials]_Element_2d2el < RC_Element_2d1el
-%       [your initials]_Node_2d2el < RC_Node_2d1el
+%       CTJL_Analysis_2d2el < RC_Analysis_2d1el
+%       CTJL_Element_2d2el < RC_Element_2d1el
+%       CTJL_Node_2d2el < RC_Node_2d1el
 %
 %   Your code must replace these few lines of code below...
+    analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
+    
+    analysis.RunAnalysis();
 
 %     if restart == 1  ||  isempty(apratios)
 % 		DEFL=[]; REACT=[]; ELE_FOR=[]; APRATIOS=[]; LIMIT_STATE=0;
@@ -300,17 +303,17 @@ disp_E = false;
 %         Display the energy norm and load norm error index plots at the end of the analysis?
 disp_plots = false;
 
-% Instantiate an object of the Analysis class
-analysis = RC_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
-                            numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
-                            limit_state, h_stat_mes, disp_steps, disp_elements, disp_element_data, ...
-                            disp_nodes, disp_node_data, disp_Kff, disp_E, disp_plots);
-
-% Run the 2nd order analysis
-analysis.RunAnalysis();
-
-% Extract the matrices to be returned to Mastan2
-[DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns();
+% % Instantiate an object of the Analysis class
+% analysis = RC_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
+%                             numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
+%                             limit_state, h_stat_mes, disp_steps, disp_elements, disp_element_data, ...
+%                             disp_nodes, disp_node_data, disp_Kff, disp_E, disp_plots);
+% 
+% % Run the 2nd order analysis
+% analysis.RunAnalysis();
+% 
+% % Extract the matrices to be returned to Mastan2
+% [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

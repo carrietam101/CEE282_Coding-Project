@@ -87,10 +87,18 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
             u_n = (d(4) - d(1)) + ((d(4) - d(1))^2 + (d(5) - d(2))^2) / (2* self.L);
             self.natDef = [0;0;theta_an;u_n;0;theta_bn];
             
+            % Update gamma
+            self.ComputeTransformationMatrix;
+            
             % Compute the element force vector in local coordinates
-            self.f_local_new = self.f_local + self.k_global * self.natDef;
+            self.f_local_new = self.gamma' * (self.f_local + self.k_global * self.natDef);
 
-            %TODO update gamma and F
+        end
+
+        %% Get F Local New
+        %  Return "f_local_new"
+        function f_local_new = GetFLocalNew(self)
+            f_local_new = self.f_local_new;
         end
         
     end
