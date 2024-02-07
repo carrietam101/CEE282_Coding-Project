@@ -24,6 +24,12 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         % Error
         E
 
+        restart
+        defl
+        react
+        ele_for
+        apratios
+
 
     end
     
@@ -31,10 +37,11 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
     methods (Access = public)
         %% Constructor
         %    Arguments are all matrices received from Mastan2. Refer to comments in ud_2d1el.m for details.
-        function self = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss)
+        function self = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
+                                numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
+                                limit_state, h_stat_mes)
             
-%             self.num_dof_total = nnodes*self.num_dof_node;
-            self.num_dof_total = nnodes*3;
+            self.num_dof_total = nnodes*self.num_dof_node;
             self.nnodes = nnodes;
             self.coord_t = coord';
             self.fixity_t = fixity';
@@ -42,7 +49,17 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             self.nele = nele;
             self.ends = ends;
             self.truss = truss;
-            
+
+            self.numsteps = numsteps;
+            self.ratio_req = ratio_req;
+            self.stop_ratio = stop_ratio;
+
+            self.restart = restart;
+            self.defl = defl;
+            self.react = react;
+            self.ele_for = ele_for;
+            self.apratios = apratios;
+
             self.CreateNodes();
             self.CreateElements(A, Ayy, Izz, E, v);
             self.ClassifyDOF();
