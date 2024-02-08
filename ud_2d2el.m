@@ -226,11 +226,11 @@ function [DEFL,REACT,ELE_FOR,AFLAG,APRATIOS,LIMIT_STATE] = ud_2d2el(...
 %       CTJL_Node_2d2el < RC_Node_2d1el
 %
 %   Your code must replace these few lines of code below...
-    analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
-                                numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
-                                limit_state, h_stat_mes);
+    analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
     
-    analysis.RunAnalysis();
+    analysis.RunAnalysis(numsteps, ratio_req, stop_ratio);
+    
+    [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns()
 
 %     if restart == 1  ||  isempty(apratios)
 % 		DEFL=[]; REACT=[]; ELE_FOR=[]; APRATIOS=[]; LIMIT_STATE=0;

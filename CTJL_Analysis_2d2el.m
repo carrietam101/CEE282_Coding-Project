@@ -12,6 +12,9 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         % requested maximum number of load steps or increments
         numsteps
 
+        % total step number
+        step_num
+
         % requested load step or increment size
         ratio_req
 
@@ -37,39 +40,31 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
     methods (Access = public)
         %% Constructor
         %    Arguments are all matrices received from Mastan2. Refer to comments in ud_2d1el.m for details.
-        function self = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
-                                numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
-                                limit_state, h_stat_mes)
-            
-            self.num_dof_total = nnodes*self.num_dof_node;
-            self.nnodes = nnodes;
-            self.coord_t = coord';
-            self.fixity_t = fixity';
-            self.concen_t = concen';
-            self.nele = nele;
-            self.ends = ends;
-            self.truss = truss;
-
-            self.numsteps = numsteps;
-            self.ratio_req = ratio_req;
-            self.stop_ratio = stop_ratio;
-
-            self.restart = restart;
-            self.defl = defl;
-            self.react = react;
-            self.ele_for = ele_for;
-            self.apratios = apratios;
-
-            self.CreateNodes();
-            self.CreateElements(A, Ayy, Izz, E, v);
-            self.ClassifyDOF();
+        function self = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss)
+            % Inherit from the parent class
+            self = self@RC_Analysis_2d1el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss)
         end
 
         %% Run Analysis
         %  Run 2nd order analysis
-        function RunAnalysis(self)
+        function RunAnalysis(self, numsteps, ratio_req, stop_ratio)
             self.InitializeOutputVariables();
             
+          
+            self.numsteps = numsteps;
+            self.ratio_req = ratio_req;
+            self.stop_ratio = stop_ratio;
+            
+            % Calculate how many steps needed
+            if stop_ratio / ratio_req > numsteps
+                self.step_num = numsteps;
+            else
+                self.step_num = stop_ratio / ratio_req;
+            end
+
+            % Create load vectors
+            self.CreateLoadVectors;
+
             % Conduct 2nd order analysis
             self.SecondOrderAnalysis;
             
@@ -90,20 +85,22 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             self.DEFL = zeros(self.num_dof_node, self.nnodes);
             self.REACT = zeros(self.num_dof_node, self.nnodes);
             self.ELE_FOR = zeros(self.nele, self.num_dof_node*2);
-%             self.R = zeros(self.dof_free,self.numsteps);
         end
 
         %% Main 2nd Order Analysis Calculation
         function SecondOrderAnalysis(self)
-            for i = 1:self.numsteps
+            for i = 1:self.step_num
                 % Construct Kt_(i-1) and check Kff
                 self.CreateStiffnessMatrix();
-                self.delf = self.Kff \ self.ratio_req;
+
+                % Load increment
+                self.Pf(1) = self.ratio_req * i;
+                self.delf = self.Kff \ self.Pf;
 
                 % Update geometry
-                self.coord_t(:,self.dof_free) = self.delf;
-                self.CreateNodes();
-                self.CreateElements();
+                % TODO: this is just for HW3P2 case, I heard from Adam that
+                % we need to have UpdateNodes() at node class.
+                self.coord_t(:,2) = self.nodes(2).GetNodeCoord + self.delf(1:2);
 
                 % Recover forces and compile R
                 DEFL_t = self.DEFL';
@@ -117,12 +114,9 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
 %                 self.R(:,i) = self.ELE_FOR(:,self.dof_free);
 %                 self.E
 
-
-
             end
-
-
         end
+
 
         %% Create Stiffness Matrix
         %  Create the global stiffness matrix for the structure and store it in sparse format

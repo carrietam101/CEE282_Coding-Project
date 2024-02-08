@@ -19,6 +19,12 @@ classdef CTJL_Node_2d2el < RC_Node_2d1el
             self.node_coord = node_coord;
             self.AssignDOF(node_number);
         end
+        
+        %% Update Nodes
+        function UpdateNodes(self, Disp)
+            self.node_coord = self.GetNodeCoord + Disp;
+        end
+
     end
     
     % Protected methods go here
