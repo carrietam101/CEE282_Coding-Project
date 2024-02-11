@@ -39,6 +39,8 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
         %      truss:         Flag that indicates whether the element comes from a truss or not
         function self = CTJL_Element_2d2el(element_nodes, A, Ayy, Izz, E, v, truss)
             self = self@RC_Element_2d1el(element_nodes, A, Ayy, Izz, E, v, truss)
+            self.f_local = zeros(6,1);  % Initialize f_local with zeros
+            self.ComputeLocalGeometricStiffnessMatrix();
         end
         
         %% Compute Global Stiffness Matrix
@@ -58,7 +60,7 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
             self.del_local = self.gamma * self.del_global;
 
             % Compute natural deformation
-            d = del_local;
+            d = self.del_local;
             theta_R = atan((d(5) - d(2))/(self.L + d(4) - d(1)));
             theta_an = d(3) - theta_R;
             theta_bn = d(6) - theta_R;
@@ -69,7 +71,7 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
             self.ComputeTransformationMatrix;
             
             % Compute the element force vector in local coordinates
-            self.f_local_new = self.gamma' * (self.f_local + self.k_global * self.natDef);
+            self.f_local_new = self.gamma' * (self.f_local + (self.ke_local + self.kg_local) * self.natDef);
 
         end
 
@@ -105,13 +107,12 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
 
 
         %% Compute Local Geometric Stiffness Matrix
-        %  Check whether the element is part of a truss or not, and compute its local geometric stiffness matrix
-        %  accordingly. Store the computed matrix in sparse format.
         function ComputeLocalGeometricStiffnessMatrix(self)
+            % TODO: check whether f is self.f_local(4)
             if self.truss
                 self.kg_local = self.f_local(4)/self.L*[1, 0, -1, 0; 0, 1, 0, -1; -1, 0, 1, 0; 0, -1, 0, 1];
             else
-                self.kg_local = P/self.L * [1 , 0        , 0            , -1, 0         , 0;
+                self.kg_local = self.f_local(4)/self.L * [1 , 0        , 0            , -1, 0         , 0;
                                             0 , 6/5      , self.L/10    , 0 , -6/5      , self.L/10;...
                                             0 , self.L/10, 2*self.L^2/15, 0 , -self.L/10, -self.L^2/30;...
                                             -1, 0        , 0            , 1 , 0         , 0;...

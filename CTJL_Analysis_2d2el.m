@@ -120,8 +120,9 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
                 for j = 1:self.nele
                     % Obtain the displacements at the degrees of freedom corresponding to element i using linear
                     % indexing of the "DEFL_t" matrix
-                    self.elements(j).ComputeForces(DEFL_t(self.elements(j).GetElementDOF()));
-                    self.ELE_FOR(j,:) = self.elements(j).GetFLocalNew();
+                    self.elements2nd(j).ComputeForces(DEFL_t(self.elements2nd(j).GetElementDOF()));
+                    self.ELE_FOR(j,:) = self.elements2nd(j).GetFLocalNew();
+                    self.ELE_FOR
                 end
                 % write R and E later
 %                 self.R(:,i) = self.ELE_FOR(:,self.dof_free);
@@ -147,7 +148,7 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             self.elements2nd = [];
             for i = 1:self.nele
                 % Create an Element object and append it to the "elements" vector
-                self.elements2nd = [self.elements; CTJL_Element_2d2el(self.nodes2nd(self.ends(i, 1:2)), A, ...
+                self.elements2nd = [self.elements2nd; CTJL_Element_2d2el(self.nodes2nd(self.ends(i, 1:2)), A, ...
                                     Ayy, Izz, E, v, self.truss)];
             end
         end
