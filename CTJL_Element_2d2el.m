@@ -15,11 +15,6 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
         % dDeltap = gamma * dDelta_global
         dDeltap
 
-        % 6x1 element (i) force vector in local coordinates
-        f_local_new
-
-        % 6x1 natural deformation 
-        natDef
         
     end
     
@@ -65,20 +60,32 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
             theta_an = d(3) - theta_R;
             theta_bn = d(6) - theta_R;
             u_n = (d(4) - d(1)) + ((d(4) - d(1))^2 + (d(5) - d(2))^2) / (2* self.L);
-            self.natDef = [0;0;theta_an;u_n;0;theta_bn];
+            natDef = [0;0;theta_an;u_n;0;theta_bn];
             
             % Update gamma
             self.ComputeTransformationMatrix;
             
             % Compute the element force vector in local coordinates
-            self.f_local_new = self.gamma' * (self.f_local + (self.ke_local + self.kg_local) * self.natDef);
+            self.f_local = self.f_local + (self.ke_local + self.kg_local) * natDef;
 
         end
 
-        %% Get F Local New
-        %  Return "f_local_new"
-        function f_local_new = GetFLocalNew(self)
-            f_local_new = self.f_local_new;
+        %% Update Kg
+        function UpdateTransformationMatrix(self)
+            self.ComputeTransformationMatrix();
+        end
+        
+        %% Update Kg
+        function UpdateGeometricStiffnessMatrix(self)
+            self.ComputeLocalGeometricStiffnessMatrix();
+        end
+
+     
+
+        %% Get F Global
+        %  Return "f_global"
+        function f_global = GetFGlobal(self)
+            f_global = self.gamma.' * self.f_local;
         end
         
     end
@@ -87,23 +94,23 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
     methods (Access = protected)
         
         % Use this space to create any protected functions (if required)
-%         %% Update Transformation Matrix
-%         %  Update the coordinate transformation matrix of the element and store it in sparse format
-%         function ComputeTransformationMatrix(self)
-%             axis = self.element_nodes(2).GetNodeCoord() - self.element_nodes(1).GetNodeCoord();
-%             
-%             theta = cart2pol(axis(1), axis(2));
-%             c = cos(theta);
-%             s = sin(theta);
-%             
-%             gamma3 = [ c,  s,  0;
-%                       -s,  c,  0;
-%                        0,  0,  1];
-%             zeros3 = zeros(3);
-%             
-%             self.gamma = sparse([gamma3, zeros3;
-%                                  zeros3, gamma3]);
-%         end
+        %% Compute Transformation Matrix
+        %  Compute the coordinate transformation matrix of the element and store it in sparse format
+        function ComputeTransformationMatrix(self)
+            axis = self.element_nodes(2).GetNodeCoord() - self.element_nodes(1).GetNodeCoord();
+            
+            theta = cart2pol(axis(1), axis(2));
+            c = cos(theta);
+            s = sin(theta);
+            
+            gamma3 = [ c,  s,  0;
+                      -s,  c,  0;
+                       0,  0,  1];
+            zeros3 = zeros(3);
+            
+            self.gamma = sparse([gamma3, zeros3;
+                                 zeros3, gamma3]);
+        end
 
 
         %% Compute Local Geometric Stiffness Matrix

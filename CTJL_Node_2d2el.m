@@ -21,32 +21,12 @@ classdef CTJL_Node_2d2el < RC_Node_2d1el
         
         %% Update Nodes
         function UpdateNodes(self, Disp)
-            self.node_coord = self.GetNodeCoord + Disp;
+            self.node_coord = self.GetNodeCoord + Disp.';
         end
-
-%         %% Get Node Coordinates
-%         %  Return "node_coord"
-%         function node_coord = GetNodeCoord(self)
-%             node_coord = self.node_coord;
-%         end
-%         
-%         %% Get Node DOF
-%         %  Return "node_dof"
-%         function node_dof = GetNodeDOF(self)
-%             node_dof = self.node_dof;
-%         end
 
     end
     
     % Protected methods go here
     methods (Access = protected)
-%         %% Assign DOF
-%         %  Assign numbers to the three degrees of freedom corresponding to the node
-%         %    Arguments
-%         %      node_number: Node number in the structure
-%         function AssignDOF(self, node_number)
-%             start_dof = 3*node_number - 2;
-%             self.node_dof = start_dof + [0; 1; 2];
-%         end
     end
 end
