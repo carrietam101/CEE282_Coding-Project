@@ -70,7 +70,7 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
 
         end
 
-        %% Update Kg
+        %% Update Gamma
         function UpdateTransformationMatrix(self)
             self.ComputeTransformationMatrix();
         end

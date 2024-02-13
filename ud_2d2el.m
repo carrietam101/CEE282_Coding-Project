@@ -226,11 +226,21 @@ function [DEFL,REACT,ELE_FOR,AFLAG,APRATIOS,LIMIT_STATE] = ud_2d2el(...
 %       CTJL_Node_2d2el < RC_Node_2d1el
 %
 %   Your code must replace these few lines of code below...
-    analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
+
+    if ratio_req > stop_ratio
+        text = ('Oops! Something is wrong...');
+        set(h_stat_mes, 'String', text); drawnow;
+	    DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
     
-    analysis.RunAnalysis(numsteps, ratio_req, stop_ratio);
+    elseif restart == 1 && sol_scheme == 1
+        analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
+        [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.RunAnalysis(numsteps, ratio_req, stop_ratio);
     
-    [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns()
+    else
+        text = ('Oops! Something is wrong...');
+        set(h_stat_mes, 'String', text); drawnow;
+	    DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
+    end
 
 %     if restart == 1  ||  isempty(apratios)
 % 		DEFL=[]; REACT=[]; ELE_FOR=[]; APRATIOS=[]; LIMIT_STATE=0;
@@ -316,6 +326,7 @@ disp_plots = false;
 % 
 % % Extract the matrices to be returned to Mastan2
 % [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns();
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
