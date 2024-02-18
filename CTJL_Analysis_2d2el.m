@@ -22,7 +22,7 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         stop_ratio
 
         % applied load ratio at previous step i
-        apratios
+        APRATIOS
 
         % flag indicating post-limit state analysis
         limit_state
@@ -32,6 +32,12 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
 
         % reactions at each step i
         REACT_i
+
+        % load norm errors
+        load_norm_errors
+
+        % energy norm errors
+        energy_norm_errors
 
     end
     
@@ -47,8 +53,12 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
         %% Run Analysis
         %  Run 2nd order analysis
         function [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = RunAnalysis(self, numsteps, ratio_req, stop_ratio)
+            clc;
+
+            % Initialize output variables
             self.InitializeOutputVariables();
-              
+            
+            % Record variables as global variables
             self.numsteps = numsteps;
             self.ratio_req = ratio_req;
             self.stop_ratio = stop_ratio;
@@ -77,10 +87,12 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
                 % Update steps
                 i = i + 1;
             end
+
+            % Plot errors
+            RC_Plot_Errors(self.load_norm_errors, self.energy_norm_errors, self.APRATIOS); 
             
             % Return to MASTAN2
             [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = GetMastan2Returns(self, i);
-
 
         end
         %% Get Mastan2 Returns
@@ -91,11 +103,10 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             REACT = self.REACT(:, :, 1:i - 1);
             ELE_FOR = self.ELE_FOR(:, :, 1:i - 1);
             AFLAG = self.AFLAG;
-            APRATIOS = self.apratios;
+            APRATIOS = self.APRATIOS;
             LIMIT_STATE = self.limit_state;
         end
-
-        
+     
     end
     
     % Protected methods go here
@@ -106,29 +117,31 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             % DEFL and REACT are nodes x 6 dofs x maxsteps
             self.DEFL = zeros(self.nnodes, self.num_dof_node, self.maxsteps);
             self.REACT = zeros(self.nnodes, self.num_dof_node, self.maxsteps);
+
             % DEFL_i and REACT_i are 6 dofs x nodes
             self.DEFL_i = zeros(self.num_dof_node, self.nnodes);
             self.REACT_i = zeros(self.num_dof_node, self.nnodes);
+
             % ELE_FOR is nele x 6 dofs x maxsteps
             self.ELE_FOR = zeros(self.nele, self.num_dof_node*2, self.maxsteps);
         end
 
         %% Main 2nd Order Analysis Calculation
-        function SecondOrderAnalysis(self, i)
+        function SecondOrderAnalysis(self, step)
             % Update applied load ratio
-            self.apratios = [self.apratios; (i * self.ratio_req)];
+            self.APRATIOS = [self.APRATIOS; (step * self.ratio_req)];
 
             % Construct Kt_(i-1) and check Kff
             self.CreateStiffnessMatrix();
 
             % Update displacement
-            self.ComputeDisplacementsReactions(i)
+            self.ComputeDisplacementsReactions(step)
 
             % Recover forces
             DEFL_t = self.DEFL_i'; % nodes x 3 dof vector
             for j = 1:self.nele
-                self.elements(j).ComputeForces(DEFL_t(self.elements(j).GetElementDOF()));
-                self.ELE_FOR(j, :, i) = self.elements(j).GetFLocal();
+                self.elements(j).ComputeForces(self.DEFL_i(self.elements(j).GetElementDOF()));
+                self.ELE_FOR(j, :, step) = self.elements(j).GetFLocal();
             end
 
             % Update geometry
@@ -149,36 +162,34 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             self.CheckLimitState(); 
 
             % Compute Error
-%             ComputeError(self, i);
+            ComputeError(self, step);
         end
         
         %% Create Nodes
         %  Create the nnodes x 1 vector of node objects representing all the nodes in the structure
         function CreateNodes(self)
             self.nodes = CTJL_Node_2d2el.empty; % Ensure it's empty before starting
-            for i = 1:self.nnodes
+            for j = 1:self.nnodes
                 % Directly create and store the CTJL_Node_2d2el object
-                self.nodes(i) = CTJL_Node_2d2el(i, self.coord_t(:,i));
+                self.nodes(j) = CTJL_Node_2d2el(j, self.coord_t(:,j));
             end
         end
-
 
         %% Create Elements
         %  Create the nele x 1 vector of element objects representing all the elements in the structure
         %    Arguments are all matrices received from Mastan2. Refer to comments in ud_2d1el.m for details.
         function CreateElements(self, A, Ayy, Izz, E, v)
             self.elements = CTJL_Element_2d2el.empty;
-            for i = 1:self.nele
+            for j = 1:self.nele
                 % Create an Element object and append it to the "elements" vector
-                self.elements = [self.elements; CTJL_Element_2d2el(self.nodes(self.ends(i, 1:2)), A(i), ...
-                                    Ayy(i), Izz(i), E(i), v(i), self.truss)];
+                self.elements = [self.elements; CTJL_Element_2d2el(self.nodes(self.ends(j, 1:2)), A(j), ...
+                                    Ayy(j), Izz(j), E(j), v(j), self.truss)];
             end
         end
 
         %% Create Load Vectors
         %  Create the applied load vectors for each steps
         function CreateLoadVectors(self)
-            
             % Compute vector of concentrated loads applied at the free and support degrees of freedom using
             % linear indexing of the "concen_t" matrix
             self.Pf = self.concen_t(self.dof_free) * self.ratio_req;
@@ -190,7 +201,7 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
 
         %% Compute Displacements Reactions
         %  Compute the displacements and reactions and format them to return to Mastan2
-        function ComputeDisplacementsReactions(self, i)
+        function ComputeDisplacementsReactions(self, step)
             
             % Compute the displacements
             self.delf = self.Kff \ (self.Pf - self.Kfn*self.deln);
@@ -203,36 +214,71 @@ classdef CTJL_Analysis_2d2el < RC_Analysis_2d1el
             self.DEFL_i(self.dof_free) = self.delf;
             self.DEFL_i(self.dof_disp) = self.deln;
 
-            if i == 1
-                self.DEFL(:, :, i) = self.DEFL_i.';
+            if step == 1
+                self.DEFL(:, :, step) = self.DEFL_i.';
             else
-                self.DEFL(:, :, i) = self.DEFL(:, :, i - 1) + self.DEFL_i.';
+                self.DEFL(:, :, step) = self.DEFL(:, :, step - 1) + self.DEFL_i.';
             end
 
-            
             % Format the computed reactions using linear indexing of the "REACT" matrix
             self.REACT_i(self.dof_supp) = self.Ps;
             self.REACT_i(self.dof_disp) = self.Pn;
-            if i == 1
-                self.REACT(:, :, i) = self.REACT_i.';
+            if step == 1
+                self.REACT(:, :, step) = self.REACT_i.';
             else
-                self.REACT(:, :, i) = self.REACT(:, :, i - 1) + self.REACT_i.';
+                self.REACT(:, :, step) = self.REACT(:, :, step - 1) + self.REACT_i.';
             end
-
-            
         end
-
 
         %% Check Limit State
         % Set the limit state using cholesky
         function CheckLimitState(self)
-            [~, p] = chol(self.Kff); % inspired from TA programming tutorial slide
+            % Cholesky factorization
+            [~, p] = chol(self.Kff); 
+
             if p == 0
+                % limit state not yet reached, system is loading
                 self.limit_state = 0; 
             else
+                % limit state reached or exceeded, system is unloading
                 self.limit_state = 1;
             end
         end
 
+        %% Check Errors
+        % Compute the errors of the analysis
+        function ComputeError(self, step)
+
+            % Initialize resultant matrix
+            R = zeros(self.num_dof_total, 1);
+
+            % For each element
+            for i = 1:self.nele
+                % Get element forces & degrees of freedom
+                f_global = self.elements(i).GetFGlobal();
+                element_dof = self.elements(i).GetElementDOF();
+
+                % Index resultant matrix to equal to associated internal forces
+                R(element_dof) = R(element_dof) + f_global;
+            end
+
+            % Calculate total error
+            P = self.APRATIOS(step) * self.concen_t(:);
+            E_total = P - R;
+
+            % Extract errors & loads at free DOFs
+            E_free = E_total(self.dof_free);
+            P_free = P(self.dof_free);
+
+            % Calculate load norm error index at each step
+            loadNormErrorIndex = norm(E_free) / norm(P_free);
+            self.load_norm_errors = [self.load_norm_errors; loadNormErrorIndex];
+
+            % Calculate energy norm error index
+            energyNormErrorIndex = (abs(E_free).' * abs(self.delf)) / (abs(P_free).' * abs(self.delf));
+
+            % Find load normal error again after recalculating error index
+            self.energy_norm_errors = [self.energy_norm_errors; energyNormErrorIndex];
+        end
     end
 end

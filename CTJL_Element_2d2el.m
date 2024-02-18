@@ -14,8 +14,7 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
         
         % dDeltap = gamma * dDelta_global
         dDeltap
-
-        
+   
     end
     
     % Public methods go here
@@ -62,12 +61,8 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
             u_n = (d(4) - d(1)) + ((d(4) - d(1))^2 + (d(5) - d(2))^2) / (2* self.L);
             natDef = [0;0;theta_an;u_n;0;theta_bn];
             
-            % Update gamma
-            self.ComputeTransformationMatrix;
-            
             % Compute the element force vector in local coordinates
             self.f_local = self.f_local + (self.ke_local + self.kg_local) * natDef;
-
         end
 
         %% Update Gamma
@@ -79,8 +74,6 @@ classdef CTJL_Element_2d2el < RC_Element_2d1el
         function UpdateGeometricStiffnessMatrix(self)
             self.ComputeLocalGeometricStiffnessMatrix();
         end
-
-     
 
         %% Get F Global
         %  Return "f_global"

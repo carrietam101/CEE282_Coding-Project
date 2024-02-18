@@ -221,28 +221,11 @@ function [DEFL,REACT,ELE_FOR,AFLAG,APRATIOS,LIMIT_STATE] = ud_2d2el(...
 %   You will implement the following three classes that will inherit from their corresponding first order
 %   analysis classes as shown below:
 %
-%       CTJL_Analysis_2d2el < RC_Analysis_2d1el
-%       CTJL_Element_2d2el < RC_Element_2d1el
-%       CTJL_Node_2d2el < RC_Node_2d1el
+%       KSAJ_Analysis_2d2el < RC_Analysis_2d1el
+%       KSAJ_Element_2d2el < RC_Element_2d1el
+%       KSAJ_Node_2d2el < RC_Node_2d1el
 %
 %   Your code must replace these few lines of code below...
-    if ratio_req > stop_ratio
-        text = ('Oops! Something is wrong...');
-        set(h_stat_mes, 'String', text); drawnow;
-	    DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
-    
-    elseif restart == 1 && sol_scheme == 1
-        analysis = CTJL_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
-        [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.RunAnalysis(numsteps, ratio_req, stop_ratio)
-    
-    else
-        text = ('Oops! Something is wrong...');
-        set(h_stat_mes, 'String', text); drawnow;
-	    DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
-    end
-    
-
-    
 
 %     if restart == 1  ||  isempty(apratios)
 % 		DEFL=[]; REACT=[]; ELE_FOR=[]; APRATIOS=[]; LIMIT_STATE=0;
@@ -256,67 +239,83 @@ function [DEFL,REACT,ELE_FOR,AFLAG,APRATIOS,LIMIT_STATE] = ud_2d2el(...
 % 
 % 	AFLAG = inf;
 
-%% Diagnostic tools
-%
-%   To use the diagnostic tools:
-%       1. Comment out your code in the section above,
-%       2. Set your preferences about what you want displayed in the Matlab Command Window during the
-%          analysis, and
-%       3. Uncomment the code below the preferences.
-%
-%   For this to work, ensure that the following files are in Matlab's path:
-%       RC_Analysis_2d2el.p
-%       RC_Element_2d2el.p
-%       RC_Node_2d2el.p
-%       RC_Analysis_2d1el.m
-%       RC_Element_2d1el.m
-%       RC_Node_2d1el.m
-%       RC_Plot_Errors.m
+if ratio_req > stop_ratio
+    text = ('Please select an increment size less than the max applied ratio.');
+    set(h_stat_mes, 'String', text); drawnow;
+	DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
 
-% Pref 1: Load steps (row or column vector)
-%         For which load steps should data be dislayed? If set to [-1], data will be displayed for all load
-%         steps. If set to [], data will be not be displayed for any load step.
-disp_steps = [];
+elseif restart == 1 && sol_scheme == 1
+    analysis = KSAJ_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss);
+    [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.RunAnalysis(numsteps, ratio_req, stop_ratio);
 
-% Pref 2: Element numbers (row or column vector)
-%         For which elements should data be displayed? If set to [-1], data will be dislayed for all elements.
-%         If set to [], data will be not be displayed for any elements.
-disp_elements = [];
+else
+    text = ('Must start new analysis and/or simple-step analysis.');
+    set(h_stat_mes, 'String', text); drawnow;
+	DEFL=[]; REACT=[]; ELE_FOR=[]; AFLAG = []; APRATIOS=[]; LIMIT_STATE=0;
 
-% Pref 3: Element data (row or column vector)
-%         Which data should be displayed for the selected load steps and elements from pref 2? Options:
-%             1. Geometric stiffness matrix in local coordinates
-%             2. Elastic + geometric stiffness matrix in global coordinates
-%             3. Incremental displacement vector in global coordinates
-%             4. Incremental natural deformation vector in local coordinates
-%             5. Recovered internal force vector in local coordinates
-%         If set to [], no element data will be displayed.
-disp_element_data = [];
+end
 
-% Pref 4: Node numbers (row or column vector)
-%         For which nodes should data be displayed? If set to [-1], data will be dislayed for all nodes. If
-%         set to [], data will be not be displayed for any nodes.
-disp_nodes = [];
-
-% Pref 5: Node data (row or column vector)
-%         Which data should be displayed for the selected load steps and nodes from pref 4? Options:
-%             1. Deflections
-%             2. Reactions
-%         If set to [], no nodal data will be displayed.
-disp_node_data = [];
-
-% Pref 6: Kff matrix (true/false)
-%         Display the structure's Kff matrix for the selected load steps?
-disp_Kff = false;
-
-% Pref 7: Force imbalance vector (true/false)
-%         Display the structure's force imbalance vector (E) for the selected load steps?
-disp_E = false;
-
-% Pref 8: Error index plots (true/false)
-%         Display the energy norm and load norm error index plots at the end of the analysis?
-disp_plots = false;
-
+% %% Diagnostic tools
+% %
+% %   To use the diagnostic tools:
+% %       1. Comment out your code in the section above,
+% %       2. Set your preferences about what you want displayed in the Matlab Command Window during the
+% %          analysis, and
+% %       3. Uncomment the code below the preferences.
+% %
+% %   For this to work, ensure that the following files are in Matlab's path:
+% %       RC_Analysis_2d2el.p
+% %       RC_Element_2d2el.p
+% %       RC_Node_2d2el.p
+% %       RC_Analysis_2d1el.m
+% %       RC_Element_2d1el.m
+% %       RC_Node_2d1el.m
+% %       RC_Plot_Errors.m
+% 
+% % Pref 1: Load steps (row or column vector)
+% %         For which load steps should data be dislayed? If set to [-1], data will be displayed for all load
+% %         steps. If set to [], data will be not be displayed for any load step.
+% disp_steps = [];
+% 
+% % Pref 2: Element numbers (row or column vector)
+% %         For which elements should data be displayed? If set to [-1], data will be dislayed for all elements.
+% %         If set to [], data will be not be displayed for any elements.
+% disp_elements = [];
+% 
+% % Pref 3: Element data (row or column vector)
+% %         Which data should be displayed for the selected load steps and elements from pref 2? Options:
+% %             1. Geometric stiffness matrix in local coordinates
+% %             2. Elastic + geometric stiffness matrix in global coordinates
+% %             3. Incremental displacement vector in global coordinates
+% %             4. Incremental natural deformation vector in local coordinates
+% %             5. Recovered internal force vector in local coordinates
+% %         If set to [], no element data will be displayed.
+% disp_element_data = [];
+% 
+% % Pref 4: Node numbers (row or column vector)
+% %         For which nodes should data be displayed? If set to [-1], data will be dislayed for all nodes. If
+% %         set to [], data will be not be displayed for any nodes.
+% disp_nodes = [];
+% 
+% % Pref 5: Node data (row or column vector)
+% %         Which data should be displayed for the selected load steps and nodes from pref 4? Options:
+% %             1. Deflections
+% %             2. Reactions
+% %         If set to [], no nodal data will be displayed.
+% disp_node_data = [];
+% 
+% % Pref 6: Kff matrix (true/false)
+% %         Display the structure's Kff matrix for the selected load steps?
+% disp_Kff = false;
+% 
+% % Pref 7: Force imbalance vector (true/false)
+% %         Display the structure's force imbalance vector (E) for the selected load steps?
+% disp_E = false;
+% 
+% % Pref 8: Error index plots (true/false)
+% %         Display the energy norm and load norm error index plots at the end of the analysis?
+% disp_plots = false;
+% 
 % % Instantiate an object of the Analysis class
 % analysis = RC_Analysis_2d2el(nnodes, coord, fixity, concen, nele, ends, A, Ayy, Izz, E, v, truss, ...
 %                             numsteps, ratio_req, stop_ratio, restart, defl, react, ele_for, apratios, ...
@@ -327,8 +326,8 @@ disp_plots = false;
 % analysis.RunAnalysis();
 % 
 % % Extract the matrices to be returned to Mastan2
-% [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns();
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [DEFL, REACT, ELE_FOR, AFLAG, APRATIOS, LIMIT_STATE] = analysis.GetMastan2Returns()
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
